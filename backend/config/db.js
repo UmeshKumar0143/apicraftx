@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
 const connectDB = async () => {
   try {
-    await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/api-craft', {
+    await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/apicraft', {
       useNewUrlParser: true,
       useUnifiedTopology: true
     });

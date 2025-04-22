@@ -49,10 +49,10 @@ export default function DashBoard() {
             </p>
             <div className="flex justify-center gap-4 mb-8">
               <a
-                href="./main"
+                href="./signup"
                 className="px-6 py-3 bg-white text-teal-500 rounded font-medium hover:bg-gray-100 transition-colors"
               >
-                Try API Craft for Free
+                Sign Up
               </a>
             </div>
           </div>
