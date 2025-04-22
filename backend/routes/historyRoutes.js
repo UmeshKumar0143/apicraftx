@@ -1,6 +1,8 @@
-const History = require('../models/history');
+const express = require('express');
+const router = express.Router();
+const { getHistory } = require('../controllers/historyController');
+const auth = require('../middleware/auth');
 
-exports.getHistory = async (req, res) => {
-  const history = await History.find({ userId: req.user._id }).sort({ timestamp: -1 });
-  res.json(history);
-};
+router.get('/', auth, getHistory);
+
+module.exports = router;

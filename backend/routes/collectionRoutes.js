@@ -1,18 +1,10 @@
-const Collection = require('../models/collection');
+const express = require('express');
+const router = express.Router();
+const { createCollection, getCollections, deleteCollection } = require('../controllers/collectionController');
+const auth = require('../middleware/auth');
 
-exports.createCollection = async (req, res) => {
-  const { name, baseUrl, requests } = req.body;
-  const collection = await Collection.create({ name, baseUrl, requests, userId: req.user._id });
-  res.status(201).json(collection);
-};
+router.post('/', auth, createCollection);
+router.get('/', auth, getCollections);
+router.delete('/:id', auth, deleteCollection);
 
-exports.getCollections = async (req, res) => {
-  const collections = await Collection.find({ userId: req.user._id });
-  res.json(collections);
-};
-
-exports.deleteCollection = async (req, res) => {
-  const { id } = req.params;
-  await Collection.findByIdAndDelete(id);
-  res.json({ message: 'Collection deleted' });
-};
+module.exports = router;

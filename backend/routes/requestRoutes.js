@@ -1,13 +1,8 @@
-const axios = require('axios');
-const History = require('../models/history');
+const express = require('express');
+const router = express.Router();
+const { executeRequest } = require('../controllers/requestController');
+const auth = require('../middleware/auth');
 
-exports.    executeRequest = async (req, res) => {
-  const { method, url, headers, body } = req.body;
-  try {
-    const response = await axios({ method, url, headers, data: body });
-    await History.create({ userId: req.user._id, method, url, headers, body, response: response.data });
-    res.json(response.data);
-  } catch (err) {
-    res.status(500).json({ message: 'Request failed', error: err.message });
-  }
-};
+router.post('/', auth, executeRequest);
+
+module.exports = router;
