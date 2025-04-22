@@ -1,8 +1,14 @@
 import { useState } from 'react';
+import { BACKEND_URL } from '../utils/utils';
+import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
 
 export default function SignUp() {
+
+  const navigate = useNavigate(); 
+
   const [formData, setFormData] = useState({
-    name: '',
+    username: '',
     email: '',
     password: '',
   });
@@ -10,7 +16,7 @@ export default function SignUp() {
 
   const validateForm = () => {
     const newErrors = {};
-    if(!formData.name) newErrors.name = 'Name is required';
+    if(!formData.username) newErrors.username = 'Username is required';
     if (!formData.email) newErrors.email = 'Email is required';
     else if (!/\S+@\S+\.\S+/.test(formData.email)) newErrors.email = 'Invalid email';
     if (!formData.password) newErrors.password = 'Password is required';
@@ -26,10 +32,20 @@ export default function SignUp() {
     setErrors((prev) => ({ ...prev, [name]: '' }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (validateForm()) {
-      console.log('SignUp submitted:', formData);
+    try {
+      if (validateForm()) {
+        const response = await axios.post(`${BACKEND_URL}/api/users/register`, formData);
+        const data =response.data;
+        if(data){ 
+        localStorage.setItem('token',data); 
+        navigate('/main'); 
+        }
+       
+    } 
+    }catch (error) {
+      console.log("Error Occured"); 
     }
   };
 
@@ -41,16 +57,16 @@ export default function SignUp() {
             <div className="mb-4">
             <label className="block text-sm text-gray-600 mb-1">Name</label>
             <input
-              name="name"
-              type="name"
+              name="username"
+              type="username"
               placeholder="Jhon Doe"
-              value={formData.name}
+              value={formData.username}
               onChange={handleChange}
               className={`w-full p-2 border ${
-                errors.name ? 'border-red-500' : 'border-gray-300'
+                errors.username ? 'border-red-500' : 'border-gray-300'
               } rounded focus:outline-none focus:ring-2 focus:ring-blue-500`}
             />
-            {errors.name && <p className="text-sm text-red-500 mt-1">{errors.name}</p>}
+            {errors.username && <p className="text-sm text-red-500 mt-1">{errors.username}</p>}
           </div>
           <div className="mb-4">
             <label className="block text-sm text-gray-600 mb-1">Email</label>

@@ -34,7 +34,6 @@ function MainPage() {
 
   const [responseViewType, setResponseViewType] = useState('raw');
 
-  const navigate = useNavigate(); 
 
 
   useEffect(() => {

@@ -24,13 +24,13 @@ export default function DashBoard() {
           
           <div className="flex items-center">
             <a
-              href="#"
+              href="/signin"
               className="px-4 py-2 border border-gray-800 rounded mr-4 font-medium hover:bg-gray-50 transition-colors"
             >
               Sign In
             </a>
             <a
-              href="#"
+              href="signup"
               className="px-4 py-2 bg-teal-500 text-white rounded font-medium hover:bg-teal-600 transition-colors"
             >
               Sign Up for Free
@@ -109,7 +109,7 @@ export default function DashBoard() {
             Join millions of developers who are building the future with API Craft.
           </p>
           <a
-            href="#"
+            href="signup"
             className="px-8 py-3 bg-teal-500 text-white rounded text-lg font-medium hover:bg-teal-600 transition-colors"
           >
             Sign Up for Free
