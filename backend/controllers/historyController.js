@@ -8,7 +8,7 @@ exports.getHistory = async (req, res) => {
 exports.deleteHistory = async (req, res) => {
   try {
     const { id } = req.params; 
-
+    
     const result = await History.deleteOne({ _id: id });
 
     if (result.deletedCount === 0) {

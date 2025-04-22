@@ -3,13 +3,32 @@ const User = require('../models/user');
 
 const auth = async (req, res, next) => {
   try {
-    const token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpZCI6IjY4MDdiZGIwMDY0NmJiY2U2MjAwMzAxMyIsImlhdCI6MTc0NTM0MTIxNCwiZXhwIjoxNzQ1OTQ2MDE0fQ.30Jzf6d1QRqk6tZJSzSnyMR-LWok2E9thkzFGCknxpg';
-    if (!token) return res.status(401).json({ message: 'No token, authorization denied' });
+    const token =
+      req.header('Authorization')?.replace('Bearer ', '') ||
+      req.header('token');
+
+    if (!token) {
+      return res.status(401).json({ message: 'No token, authorization denied' });
+    }
+
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
-    req.user = await User.findById(decoded.id).select('-password');
+
+    if (!decoded?.id) {
+      return res.status(401).json({ message: 'Token is invalid or malformed' });
+    }
+
+    const user = await User.findById(decoded.id).select('-password');
+
+    if (!user) {
+      return res.status(404).json({ message: 'User not found' });
+    }
+
+    req.user = user;
     next();
   } catch (err) {
+    console.error('Auth middleware error:', err);
     res.status(401).json({ message: 'Token is not valid' });
   }
 };
+
 module.exports = auth;

@@ -3,71 +3,115 @@ import { BACKEND_URL } from '../utils/utils';
 import { useNavigate } from 'react-router-dom';
 
 function MainPage() {
-  const [selectedCollection, setSelectedCollection] = useState(null);
-
   const [activeTab, setActiveTab] = useState('Params');
   const [activeResponseTab, setActiveResponseTab] = useState('Body');
   const [method, setMethod] = useState('GET');
   const [url, setUrl] = useState('');
   const [isLoading, setIsLoading] = useState(false);
-
-  const [responseStatus, setResponseStatus] = useState(null);
+  const [responseStatus, setResponseStatus] = useState<number | null>(null);
   const [responseStatusText, setResponseStatusText] = useState('');
   const [responseTime, setResponseTime] = useState('');
   const [responseBody, setResponseBody] = useState('');
   const [responseHeaders, setResponseHeaders] = useState('');
-
-  const [history, setHistory] = useState([]);
-
+  const [history, setHistory] = useState<any[]>([]);
   const [params, setParams] = useState([{ key: '', value: '', description: '' }]);
   const [headers, setHeaders] = useState([{ key: '', value: '', description: '' }]);
   const [bodyContent, setBodyContent] = useState('');
   const [bodyType, setBodyType] = useState('raw');
-  const [bodyParams, setBodyParams] = useState([{ key: '', value: '' }]); 
+  const [bodyParams, setBodyParams] = useState([{ key: '', value: '' }]);
   const [authType, setAuthType] = useState('none');
   const [contentType, setContentType] = useState('application/json');
-  const [bearerToken, setBearerToken] = useState(''); 
-  const [basicUsername, setBasicUsername] = useState(''); 
+  const [bearerToken, setBearerToken] = useState('');
+  const [basicUsername, setBasicUsername] = useState('');
   const [basicPassword, setBasicPassword] = useState('');
-
   const [searchQuery, setSearchQuery] = useState('');
-
   const [responseViewType, setResponseViewType] = useState('raw');
 
+  const navigate = useNavigate();
 
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      navigate('/signin');
+    }
+  }, [navigate]);
 
   useEffect(() => {
     fetchHistory();
   }, [responseBody]);
 
-
-
-
   const fetchHistory = async () => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      navigate('/signin');
+      return;
+    }
+
     try {
-      const response = await fetch(`${BACKEND_URL}/api/history`);
+      const response = await fetch(`${BACKEND_URL}/api/history`, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      });
       if (response.ok) {
         const historyData = await response.json();
         setHistory(historyData);
+      } else {
+        console.error('Failed to fetch history:', response.statusText);
+        if (response.status === 401) {
+          localStorage.removeItem('token');
+          navigate('/signin');
+        }
       }
     } catch (error) {
       console.error('Error fetching history:', error);
     }
   };
 
-  const handleDelete = async (id) => {
-    const response = await fetch(`${BACKEND_URL}/api/history/${id}`); 
-    console.log(response); 
-     fetchHistory();     
-  }
+  const handleDelete = async (id: string) => {
+    const token = localStorage.getItem('token');
+    if (!token) {
+      navigate('/signin');
+      return;
+    }
+
+    try {
+      const response = await fetch(`${BACKEND_URL}/api/history/${id}`, {
+        method: 'GET',
+        headers: {
+          token: token,
+          'Content-Type': 'application/json',
+        },
+      });
+      if (response.ok) {
+        fetchHistory();
+      } else {
+        console.error('Failed to delete history item:', response.statusText);
+        if (response.status === 401) {
+          localStorage.removeItem('token');
+          navigate('/signin');
+        }
+      }
+    } catch (error) {
+      console.error('Error deleting history item:', error);
+    }
+  };
 
   const sendRequest = async () => {
-    const requestHeaders = {};
+    const token = localStorage.getItem('token');
+    const requestHeaders: { [key: string]: string } = {};
     headers.forEach((header) => {
       if (header.key && header.value) {
         requestHeaders[header.key] = header.value;
       }
     });
+
+    if (authType === 'bearer' && bearerToken) {
+      requestHeaders['Authorization'] = `Bearer ${bearerToken}`;
+    } else if (authType === 'basic' && basicUsername && basicPassword) {
+      requestHeaders['Authorization'] = `Basic ${btoa(`${basicUsername}:${basicPassword}`)}`;
+    }
 
     let finalUrl = url;
     if (params.some((p) => p.key && p.value)) {
@@ -103,7 +147,11 @@ function MainPage() {
     try {
       const response = await fetch(`${BACKEND_URL}/api/requests`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(token && { Authorization: `Bearer ${token}` }),
+          ...requestHeaders,
+        },
         body: JSON.stringify({
           method,
           url: finalUrl,
@@ -113,43 +161,39 @@ function MainPage() {
       });
 
       const data = await response.json();
+      console.log('API Response:', data); 
+
       const endTime = Date.now();
 
-      if (data.ok) {
-        setResponseStatus(data.status);
-        setResponseStatusText(data.statusText);
+      if (response.ok) {
+        setResponseStatus(data.status || response.status);
+        setResponseStatusText(data.statusText || response.statusText);
         setResponseTime((endTime - startTime).toString());
-
-        if (typeof data.response.body === 'object') {
-          setResponseBody(JSON.stringify(data.body, null, 2));
-        } else {
-          setResponseBody(data.body);
-        }
-
-        let headersText = '';
-        for (const [key, value] of Object.entries(data.response.headers)) {
-          headersText += `${key}: ${value}\n`;
-        }
-        setResponseHeaders(headersText);
-
+        setResponseBody(data.body || '');
+        setResponseHeaders('');
         fetchHistory();
       } else {
         setResponseStatus(response.status);
         setResponseStatusText(response.statusText);
         setResponseTime((endTime - startTime).toString());
         setResponseBody(JSON.stringify(data, null, 2));
+        setResponseHeaders('');
+        if (response.status === 401) {
+          localStorage.removeItem('token');
+          navigate('/signin');
+        }
       }
     } catch (error) {
       console.error('Error executing request:', error);
       setResponseStatus(0);
       setResponseStatusText('Error');
       setResponseBody(JSON.stringify({ error: 'Network error occurred' }, null, 2));
+      setResponseHeaders('');
     } finally {
       setIsLoading(false);
     }
   };
 
-  // Helper functions for UI
   const isHtmlResponse = () => {
     return (
       responseHeaders.toLowerCase().includes('content-type: text/html') ||
@@ -157,7 +201,7 @@ function MainPage() {
     );
   };
 
-  const addRow = (type) => {
+  const addRow = (type: string) => {
     if (type === 'params') {
       setParams([...params, { key: '', value: '', description: '' }]);
     } else if (type === 'headers') {
@@ -167,7 +211,7 @@ function MainPage() {
     }
   };
 
-  const updateRow = (type, index, field, value) => {
+  const updateRow = (type: string, index: number, field: string, value: string) => {
     if (type === 'params') {
       const newParams = [...params];
       newParams[index][field] = value;
@@ -183,7 +227,7 @@ function MainPage() {
     }
   };
 
-  const loadFromHistory = (historyItem) => {
+  const loadFromHistory = (historyItem: any) => {
     setMethod(historyItem.method);
     setUrl(historyItem.url);
 
@@ -204,19 +248,20 @@ function MainPage() {
     }
   };
 
- 
-
   const filteredHistory = history.filter(
     (item) =>
       item.url.toLowerCase().includes(searchQuery.toLowerCase()) ||
       item.method.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    navigate('/signin');
+  };
+
   return (
     <div className="flex flex-col h-screen bg-gray-50 text-gray-800 font-sans">
-
-      <header className="flex items-center px-5 py-3 bg-white shadow">
+      <header className="flex items-center w-full justify-between px-20 py-3 bg-white shadow">
         <div className="flex items-center text-lg font-bold text-orange-500 mr-5">
           <span>API Craft</span>
         </div>
@@ -229,22 +274,17 @@ function MainPage() {
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
+        <button
+          onClick={handleLogout}
+          className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600"
+        >
+          Logout
+        </button>
       </header>
 
       <div className="flex flex-1 overflow-hidden">
         {/* Left Panel */}
         <div className="w-72 bg-white border-r border-gray-200 flex flex-col overflow-y-auto">
-          <div className="flex justify-between items-center p-4 border-b border-gray-100">
-            <h3 className="font-medium">Collections</h3>
-            <button
-              className="text-gray-500 hover:text-orange-500"
-              aria-label="Create new collection"
-            >
-              <i className="fa fa-plus"></i>
-            </button>
-          </div>
-
-
           <div className="flex justify-between items-center p-4 border-b border-t border-gray-100">
             <h3 className="font-medium">History</h3>
           </div>
@@ -271,8 +311,18 @@ function MainPage() {
                 >
                   {item.method}
                 </span>
-                <span className="text-xs text-gray-600 overflow-hidden text-ellipsis">{item.url}</span>
-                <button onClick={()=>handleDelete(item._id)} className='text-sm  bg-red-500  text-white font-bold p-[6px] border rounded-lg hover:cursor-pointer'>Delete</button>
+                <span className="text-xs text-gray-600 overflow-hidden text-ellipsis flex-1">
+                  {item.url}
+                </span>
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDelete(item._id);
+                  }}
+                  className="text-sm bg-red-500 text-white font-bold p-[6px] border rounded-lg hover:cursor-pointer"
+                >
+                  Delete
+                </button>
               </div>
             ))}
             {filteredHistory.length === 0 && (
@@ -312,12 +362,6 @@ function MainPage() {
               disabled={isLoading}
             >
               {isLoading ? 'Sending...' : 'Send'}
-            </button>
-            <button
-              className="px-5 py-2 bg-blue-500 hover:bg-blue-600 text-white rounded font-medium transition-colors"
-              disabled={!selectedCollection}
-            >
-              Save
             </button>
           </div>
 
