@@ -1,3 +1,7 @@
+import DashBoard from "./components/DashBoard";
+import "./App.css"
 export default function App(){
-  return <h1>helo</h1>
+  return <div>
+    <DashBoard/>
+  </div>
 }
