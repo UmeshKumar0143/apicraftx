@@ -13,6 +13,40 @@
 
 ## 📦 Setup
 
-1. *Clone* the repo:  
-   ```bash
-   git clone https://github.com/UmeshKumar0143/apicraftx.git
+
+## Installation
+
+```bash
+git clone https://github.com/yourusername/APICRAFTX.git
+cd APICRAFTX
+npm install
+```
+
+## Usage
+
+```bash
+npm start
+```
+
+Then open [http://localhost:3000](http://localhost:3000) in your browser.
+
+## Screenshots
+
+### Login Screen
+![Login Screen](Img/1.png)
+
+### Dashboard
+![Dashboard](Img/2.png)
+
+### Profile Page
+![Profile Page](Img/3.png)
+
+### Settings
+![Settings](Img/4.png)
+
+### Report Page
+![Report Page](Img/5.png)
+
+## License
+
+[MIT](LICENSE)
